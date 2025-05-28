@@ -50,6 +50,10 @@ model Product {
   description String?
   image       String?
   price       Float?
+  category    String?
+  thc         Int?
+  CBD         Int?
+  stock Int?
   active      Boolean? @default(true)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
