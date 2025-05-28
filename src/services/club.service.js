@@ -5,8 +5,10 @@ export const createClubService = async (req) => {
         let imageUrl = null;
         
         if (req.file) {
-            imageUrl = `/uploads/${req.file.filename}`;
+            imageUrl = `http://localhost:8080/uploads/${req.file.filename}`;
         }
+
+
 
         const create = await prisma.club.create({
             data: {
@@ -160,6 +162,43 @@ export const updateClubImageService = async (req) => {
         return {
             status: 500,
             message: "Error al actualizar la imagen del club",
+            error: error.message
+        };
+    }
+}
+
+
+export const getClubByIdService = async(req) => {
+    try {
+        const {clubId} = req.params;
+
+        const dataClub = await prisma.club.findUnique({
+            where: { 
+                id: clubId
+            },
+            include:{
+                users: {
+                    where:{rol: 'USER'}
+                },
+                products: true
+            }
+        });       
+
+        if (!dataClub) {
+            return {
+                status: 404,
+                message: "Club no encontrado"
+            };
+        }
+
+        return {
+            status: 200,
+            data: dataClub
+        };
+    } catch (error) {
+        return {
+            status: 500,
+            message: "Error al obtener los datos del club",
             error: error.message
         };
     }

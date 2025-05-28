@@ -1,4 +1,4 @@
-import { createClubService, updateClubStatusService, updateUserClubService, updateClubImageService } from "../services/club.service.js";
+import { createClubService, updateClubStatusService, updateUserClubService, updateClubImageService, getClubByIdService } from "../services/club.service.js";
 
 export const createClub = async (req, res) => {
     try {
@@ -71,3 +71,20 @@ export const updateClubImage = async (req, res) => {
         });
     }
 };
+
+export const getClubById = async(req,res) => {
+    try {
+        const result = await getClubByIdService(req);
+        if (result.status === 200){
+            return res.status(200).json(result)
+        }else {
+            return res.status(result.status).json(result);
+        }
+    } catch (error) {
+        return res.status(500).json({
+            status: 500,
+            message: "Error interno del servidor",
+            error: error.message
+        });
+    }
+}
