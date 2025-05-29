@@ -22,7 +22,7 @@ const opcionesCors = {
 app.use(cors(opcionesCors))
 app.use(express.urlencoded({extended: true}));
 app.use(express.json());
-app.use("/upload", express.static("src/middlewares/upload"))
+app.use("/uploads", express.static("src/uploads"))
 //endpoint
 app.use("/", userRouter)
 app.use("/", clubRouter)

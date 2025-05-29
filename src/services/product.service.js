@@ -3,7 +3,7 @@ import { AppError, successResponse, errorResponse } from '../utils/responseHandl
 
 export const createProductService = async (req) => {
     const { name, description, price, category, thc, CBD, stock, clubId } = req.body;
-    const image = req.file ? req.file.path : null;
+    const image = req.file ? `${process.env.API_URL}/uploads/${req.file.filename}` : null;
 
     try {
         const product = await prisma.product.create({
@@ -28,10 +28,11 @@ export const createProductService = async (req) => {
 };
 
 export const getAllProductsService = async (req) => {
-    const { clubId, category, active } = req.query;
+    const { clubId } = req.params;
+    const { category, active } = req.query;
     
     try {
-        const where = {};
+        const where = {clubId};
         
         if (clubId) where.clubId = clubId;
         if (category) where.category = category;

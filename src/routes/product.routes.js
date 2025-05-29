@@ -14,8 +14,8 @@ import upload from '../middlewares/upload.js';
 const productRouter = Router();
 
 // Rutas públicas
-productRouter.get('/', getAllProducts);
-productRouter.get('/:id', getProductById);
+productRouter.get('/products/:clubId', getAllProducts);
+productRouter.get('/product/:id', getProductById);
 
 // Rutas protegidas
 productRouter.post('/', authenticate, authorizeRoles('CLUB'), upload.single('image'), createProduct);
