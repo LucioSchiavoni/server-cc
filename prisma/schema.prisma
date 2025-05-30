@@ -20,6 +20,8 @@ model User {
   email     String?  @unique
   password  String?
   rol       Role?
+  address String?
+  phone String?
   active    Boolean? @default(true)
   clubId    String?
   club      Club?    @relation(fields: [clubId], references: [id])

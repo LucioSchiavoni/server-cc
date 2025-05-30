@@ -4,7 +4,8 @@ import {
     authService, 
     changePasswordService, 
     getAllUserService, 
-    deleteUserService 
+    deleteUserService, 
+    getAllSocioService
 } from '../services/user.service.js';
 
 export const register = async (req, res) => {
@@ -71,6 +72,20 @@ export const getAllUsers = async (req, res) => {
         });
     }
 };
+
+export const getAllSocio = async(req, res) => {
+     const {clubId} = req.params;
+    try {
+        const result = await getAllSocioService(clubId);
+        return res.status(result.statusCode).json(result);
+    } catch (error) {
+        return res.status(500).json({
+            success: false,
+            statusCode: 500,
+            message: 'Error interno del servidor'
+        });
+    }
+}
 
 export const deleteUser = async (req, res) => {
     try {

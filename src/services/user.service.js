@@ -35,7 +35,7 @@ const errorResponse = (message, statusCode = 400) => {
 };
 
 export const registerService = async (req) => {
-    const {name, password, rol, email} = req.body;
+    const {name, password, rol, email, address, phone, clubId} = req.body;
     
     try {
         const exist = await prisma.user.findFirst({
@@ -54,7 +54,10 @@ export const registerService = async (req) => {
                 email,
                 name,
                 password: hashPassword,
-                rol
+                rol,
+                address,
+                phone,
+                clubId: clubId || null,
             },
             select: {
                 id: true,
@@ -97,6 +100,8 @@ export const loginService = async (req) => {
             email: existUser.email,
             name: existUser.name,
             rol: existUser.rol,
+            address: existUser.address,
+            phone: existUser.phone,
             clubId: existUser.clubId,
             active: existUser.active
         }, process.env.SECRET_KEY, { expiresIn: '12h' });
@@ -109,6 +114,8 @@ export const loginService = async (req) => {
                     email: existUser.email,
                     name: existUser.name,
                     rol: existUser.rol,
+                    address: existUser.address,
+                    phone: existUser.phone,
                     clubId: existUser.clubId,
                     active: existUser.active,
                 }
@@ -140,6 +147,8 @@ export const authService = async (req) => {
                 id: true,
                 email: true,
                 name: true,
+                address:true,
+                phone: true,
                 rol: true,
                 clubId: true,
                 active: true,
@@ -203,6 +212,34 @@ export const getAllUserService = async() => {
         return errorResponse('Error al obtener los usuarios', 500);
     }
 };
+ 
+export const getAllSocioService = async(clubId) => {
+
+    try {
+        const socios = await prisma.user.findMany({
+            where: {
+                clubId,
+                rol: "USER"
+            },
+            select: {
+                id: true,
+                email: true,
+                name: true,
+                rol: true,
+                active: true,
+                createdAt: true
+            },
+            orderBy: {
+                createdAt: 'desc'
+            }
+        });
+        return successResponse(socios, 'Usuarios obtenidos con éxito');
+    } catch (error) {
+        return errorResponse('Error al obtener los socios', 500);
+    }
+}
+
+
 
 export const deleteUserService = async(req) => {
     const {id} = req.params;
