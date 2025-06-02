@@ -35,7 +35,6 @@ export const createClubService = async (req) => {
                 updatedAt: true
             }
         });
-
         return {
             status: 201,
             message: "Club creado exitosamente",
@@ -55,13 +54,17 @@ export const updateClubStatusService = async (req) => {
         const { id } = req.params;
         const { active } = req.body;
 
+        // Validación rápida del input
+        if (typeof active !== 'boolean') {
+            return {
+                status: 400,
+                message: "El campo 'active' debe ser un booleano"
+            };
+        }
+
         const updatedClub = await prisma.club.update({
-            where: {
-                id: id
-            },
-            data: {
-                active: active
-            },
+            where: { id },
+            data: { active },
             select: {
                 id: true,
                 name: true,
@@ -76,6 +79,12 @@ export const updateClubStatusService = async (req) => {
             data: updatedClub
         };
     } catch (error) {
+        if (error.code === 'P2025') {
+            return {
+                status: 404,
+                message: "Club no encontrado"
+            };
+        }
         return {
             status: 500,
             message: "Error al actualizar el estado del club",
@@ -84,6 +93,8 @@ export const updateClubStatusService = async (req) => {
     }
 }
 
+
+//Una vez creado el club, se actualiza el usuario con el clubId
 export const updateUserClubService = async (req) => {
     try {
         const { userId } = req.params;
@@ -199,6 +210,71 @@ export const getClubByIdService = async(req) => {
         return {
             status: 500,
             message: "Error al obtener los datos del club",
+            error: error.message
+        };
+    }
+}
+
+export const updateClubService = async (req) => {
+    try {
+        const { id } = req.params;
+        const { name, description, address, phone, email, website, active } = req.body;
+        
+        // Construir objeto de actualización dinámicamente
+        const updateData = {};
+        if (name) updateData.name = name;
+        if (description) updateData.description = description;
+        if (address) updateData.address = address;
+        if (phone) updateData.phone = phone;
+        if (email) updateData.email = email;
+        if (website) updateData.website = website;
+        if (active !== undefined) updateData.active = active;
+
+        // Manejar la imagen si se proporciona
+        if (req.file) {
+            updateData.image = `${process.env.API_URL}/uploads/${req.file.filename}`;
+        }
+
+        // Validar que al menos un campo sea proporcionado
+        if (Object.keys(updateData).length === 0) {
+            return {
+                status: 400,
+                message: "Debe proporcionar al menos un campo para actualizar"
+            };
+        }
+
+        const updatedClub = await prisma.club.update({
+            where: { id },
+            data: updateData,
+            select: {
+                id: true,
+                name: true,
+                description: true,
+                image: true,
+                address: true,
+                phone: true,
+                email: true,
+                website: true,
+                active: true,
+                updatedAt: true
+            }
+        });
+
+        return {
+            status: 200,
+            message: "Club actualizado exitosamente",
+            data: updatedClub
+        };
+    } catch (error) {
+        if (error.code === 'P2025') {
+            return {
+                status: 404,
+                message: "Club no encontrado"
+            };
+        }
+        return {
+            status: 500,
+            message: "Error al actualizar el club",
             error: error.message
         };
     }

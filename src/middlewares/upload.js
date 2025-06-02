@@ -5,24 +5,36 @@ import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+// Tipos de archivos permitidos
+const MIME_TYPES = {
+    'image/jpeg': 'jpg',
+    'image/jpg': 'jpg',
+    'image/png': 'png',
+    'image/webp': 'webp'
+};
+
+// Tamaño máximo permitido (2MB)
+const MAX_FILE_SIZE = 2 * 1024 * 1024;
+
 // Configuración del almacenamiento
 const storage = multer.diskStorage({
     destination: function (req, file, cb) {
         cb(null, path.join(__dirname, '../uploads/'));
     },
     filename: function (req, file, cb) {
+        const extension = MIME_TYPES[file.mimetype];
         const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-        cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname));
+        cb(null, file.fieldname + '-' + uniqueSuffix + '.' + extension);
     }
 });
 
 // Filtro de archivos
 const fileFilter = (req, file, cb) => {
-    // Aceptar solo imágenes
-    if (file.mimetype.startsWith('image/')) {
+    // Verificar tipo de archivo
+    if (MIME_TYPES[file.mimetype]) {
         cb(null, true);
     } else {
-        cb(new Error('Solo se permiten archivos de imagen.'), false);
+        cb(new Error('Solo se permiten archivos de imagen (JPG, PNG, WEBP)'), false);
     }
 };
 
@@ -31,7 +43,7 @@ const upload = multer({
     storage: storage,
     fileFilter: fileFilter,
     limits: {
-        fileSize: 5 * 1024 * 1024 // límite de 5MB
+        fileSize: MAX_FILE_SIZE
     }
 });
 
@@ -41,7 +53,7 @@ export const handleMulterError = (err, req, res, next) => {
         if (err.code === 'LIMIT_FILE_SIZE') {
             return res.status(400).json({
                 status: 400,
-                message: 'El archivo es demasiado grande. Tamaño máximo: 5MB'
+                message: 'El archivo es demasiado grande. Tamaño máximo: 2MB'
             });
         }
         return res.status(400).json({

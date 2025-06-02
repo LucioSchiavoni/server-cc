@@ -19,9 +19,11 @@ const opcionesCors = {
     credentials: true 
 };
 
+// Configuración de límites para body-parser
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ extended: true, limit: '50mb' }));
+
 app.use(cors(opcionesCors))
-app.use(express.urlencoded({extended: true}));
-app.use(express.json());
 app.use("/uploads", express.static("src/uploads"))
 //endpoint
 app.use("/", userRouter)
