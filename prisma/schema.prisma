@@ -39,6 +39,7 @@ model Club {
   phone     String?
   email     String?
   website   String?
+  minMonthlyGrams  Float?   @default(0)
   active    Boolean? @default(true)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -69,6 +70,9 @@ model Order {
   userId    String?
   user      User?       @relation(fields: [userId], references: [id])
   total     Int
+  dateOrder String
+  hourOrder String
+  comment String 
   status    StatusOrder @default(PENDING)
   createdAt DateTime    @default(now())
   updatedAt DateTime    @updatedAt
