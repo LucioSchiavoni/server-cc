@@ -1,4 +1,4 @@
-import { createOrder, getOrders } from '../services/order.service.js';
+import { createOrder, getOrderByUserIdService, getOrders } from '../services/order.service.js';
 
 export const createOrderController = async (req, res) => {
     try {
@@ -20,3 +20,14 @@ export const getOrdersController = async (req, res) => {
         res.status(500).json({ error: 'Error al obtener las órdenes' });
     }
 };
+
+
+export const getOrderByUserId = async(req,res) => {
+    try {
+        const orders = await getOrderByUserIdService(req);
+        res.status(200).json(orders);
+    } catch (error) {
+        console.error('Error al obtener las órdenes:', error);
+        res.status(500).json({ error: 'Error al obtener las órdenes' });
+    }
+}

@@ -2,22 +2,23 @@ import prisma from "../config/db.js";
 
 export const createOrder = async (orderData) => {
     try {
-        const { comment, date, items, time, total } = orderData;
+        const { comment, userId,  date, items, time, total } = orderData;
         
         // Formatear la fecha a string en formato YYYY-MM-DD
         const formattedDate = new Date(date).toISOString().split('T')[0];
         
         const order = await prisma.order.create({
             data: {
-                comment,
+                userId,
+                comment: comment || '',
                 dateOrder: formattedDate,
                 hourOrder: time,
-                total,
+                total: parseInt(total),
                 status: 'PENDING',
                 items: {
                     create: items.map(item => ({
                         productId: item.id,
-                        quantity: item.quantity
+                        quantity: parseFloat(item.quantity)
                     }))
                 }
             },
@@ -49,6 +50,29 @@ export const getOrders = async () => {
             }
         });
         return orders;
+    } catch (error) {
+        console.log(error);
+        throw error;
+    }
+}
+
+export const getOrderByUserIdService = async(req) => {
+    try {
+        const {userId} = req.params;
+
+        const order = await prisma.order.findMany({
+            where:{
+                userId
+            },
+            include:{
+                items: {
+                    include: {
+                        product: true
+                    }
+                }
+            }
+        })
+        return order;
     } catch (error) {
         console.log(error);
         throw error;
