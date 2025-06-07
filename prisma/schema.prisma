@@ -72,7 +72,7 @@ model Order {
   total     Int
   dateOrder String
   hourOrder String
-  comment String 
+  comment   String?
   status    StatusOrder @default(PENDING)
   createdAt DateTime    @default(now())
   updatedAt DateTime    @updatedAt

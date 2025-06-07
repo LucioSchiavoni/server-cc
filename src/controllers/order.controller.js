@@ -25,9 +25,23 @@ export const getOrdersController = async (req, res) => {
 export const getOrderByUserId = async(req,res) => {
     try {
         const orders = await getOrderByUserIdService(req);
-        res.status(200).json(orders);
+        if (!orders || orders.length === 0) {
+            return res.status(404).json({ 
+                message: 'No se encontraron órdenes',
+                params: req.params
+            });
+        }
+
+        res.status(200).json({
+            success: true,
+            count: orders.length,
+            data: orders
+        });
     } catch (error) {
-        console.error('Error al obtener las órdenes:', error);
-        res.status(500).json({ error: 'Error al obtener las órdenes' });
+        console.error('Error en el controlador:', error);
+        res.status(500).json({ 
+            error: 'Error al obtener las órdenes',
+            details: error.message 
+        });
     }
 }

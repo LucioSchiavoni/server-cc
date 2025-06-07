@@ -2,14 +2,17 @@ import prisma from "../config/db.js";
 
 export const createOrder = async (orderData) => {
     try {
-        const { comment, userId,  date, items, time, total } = orderData;
+        const { comment, userId, date, items, time, total } = orderData;
         
-        // Formatear la fecha a string en formato YYYY-MM-DD
         const formattedDate = new Date(date).toISOString().split('T')[0];
         
         const order = await prisma.order.create({
             data: {
-                userId,
+                user: {
+                    connect: {
+                        id: userId
+                    }
+                },
                 comment: comment || '',
                 dateOrder: formattedDate,
                 hourOrder: time,
@@ -17,7 +20,11 @@ export const createOrder = async (orderData) => {
                 status: 'PENDING',
                 items: {
                     create: items.map(item => ({
-                        productId: item.id,
+                        product: {
+                            connect: {
+                                id: item.id
+                            }
+                        },
                         quantity: parseFloat(item.quantity)
                     }))
                 }
@@ -27,7 +34,8 @@ export const createOrder = async (orderData) => {
                     include: {
                         product: true
                     }
-                }
+                },
+                user: true
             }
         });
         
@@ -58,23 +66,44 @@ export const getOrders = async () => {
 
 export const getOrderByUserIdService = async(req) => {
     try {
-        const {userId} = req.params;
+        const {clubId} = req.params;
+        
+        const club = await prisma.club.findUnique({
+            where: { id: clubId }
+        });
 
-        const order = await prisma.order.findMany({
-            where:{
-                userId
+        if (!club) return [];
+
+        const usersInClub = await prisma.user.findMany({
+            where: { clubId },
+            select: { id: true }
+        });
+
+        if (usersInClub.length === 0) return [];
+
+        const userIds = usersInClub.map(user => user.id);
+
+        return await prisma.order.findMany({
+            where: {
+                userId: { in: userIds }
             },
-            include:{
+            include: {
                 items: {
                     include: {
                         product: true
                     }
+                },
+                user: {
+                    select: {
+                        id: true,
+                        name: true,
+                        email: true,
+                        clubId: true
+                    }
                 }
             }
-        })
-        return order;
+        });
     } catch (error) {
-        console.log(error);
         throw error;
     }
 }

@@ -6,5 +6,6 @@ const orderRouter = Router();
 orderRouter.post('/order', createOrderController);
 orderRouter.get('/orders', getOrdersController);
 orderRouter.get("/order/:userId", getOrderByUserId);
+orderRouter.get("/order/club/:clubId", getOrderByUserId);
 
 export default orderRouter;
