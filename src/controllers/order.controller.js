@@ -25,13 +25,6 @@ export const getOrdersController = async (req, res) => {
 export const getOrderByUserId = async(req,res) => {
     try {
         const orders = await getOrderByUserIdService(req);
-        if (!orders || orders.length === 0) {
-            return res.status(404).json({ 
-                message: 'No se encontraron órdenes',
-                params: req.params
-            });
-        }
-
         res.status(200).json({
             success: true,
             count: orders.length,

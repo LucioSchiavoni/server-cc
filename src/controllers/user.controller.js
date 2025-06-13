@@ -11,7 +11,7 @@ import {
 export const register = async (req, res) => {
     try {
         const result = await registerService(req);
-        return res.status(result.statusCode).json(result);
+     return res.status(result.statusCode).json(result);
     } catch (error) {
         return res.status(500).json({
             success: false,

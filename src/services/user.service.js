@@ -43,7 +43,11 @@ export const registerService = async (req) => {
         });
 
         if(exist) {
-            throw new AppError('El usuario ya existe', 400);
+            return successResponse(
+                { email },
+                'El email ya está registrado',
+                200
+            );
         }
 
         const salt = bcrypt.genSaltSync(10);
