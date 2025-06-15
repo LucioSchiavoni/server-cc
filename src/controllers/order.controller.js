@@ -1,4 +1,4 @@
-import { createOrder, getOrderByUserIdService, getOrders } from '../services/order.service.js';
+import { createOrder, getOrderByUserIdService, getOrders, getOrderBySocioIdService } from '../services/order.service.js';
 
 export const createOrderController = async (req, res) => {
     try {
@@ -25,6 +25,24 @@ export const getOrdersController = async (req, res) => {
 export const getOrderByUserId = async(req,res) => {
     try {
         const orders = await getOrderByUserIdService(req);
+        res.status(200).json({
+            success: true,
+            count: orders.length,
+            data: orders
+        });
+    } catch (error) {
+        console.error('Error en el controlador:', error);
+        res.status(500).json({ 
+            error: 'Error al obtener las órdenes',
+            details: error.message 
+        });
+    }
+}
+
+
+export const getOrderBySocioId = async(req,res) => {
+    try {
+        const orders = await getOrderBySocioIdService(req);
         res.status(200).json({
             success: true,
             count: orders.length,

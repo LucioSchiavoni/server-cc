@@ -5,7 +5,7 @@ import userRouter from './routes/user.routes.js'
 import clubRouter from './routes/club.routes.js'
 import productRouter from './routes/product.routes.js'
 import orderRouter from './routes/order.routes.js'
-
+import clubScheduleRouter from './routes/clubSchedule.routes.js'
 
 dotenv.config()
 
@@ -31,6 +31,7 @@ app.use("/", userRouter)
 app.use("/", clubRouter)
 app.use("/", productRouter)
 app.use("/", orderRouter)
+app.use("/", clubScheduleRouter)
 
 app.get("/", (req,res) => {
     res.json("Server CannaClub")

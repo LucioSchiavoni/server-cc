@@ -107,3 +107,39 @@ export const getOrderByUserIdService = async(req) => {
         throw error;
     }
 }
+
+
+export const getOrderBySocioIdService = async(req) => {
+    try {
+        const {socioId} = req.params;
+        
+        const socio = await prisma.user.findUnique({
+            where: { id: socioId }
+        });
+
+        if (!socio) return [];
+
+        return await prisma.order.findMany({
+            where: {
+                userId: socioId
+            },
+            include: {
+                items: {
+                    include: {
+                        product: true
+                    }
+                },
+                user: {
+                    select: {
+                        id: true,
+                        name: true,
+                        email: true,
+                        clubId: true
+                    }
+                }
+            }
+        });
+    } catch (error) {
+        throw error;
+    }
+}

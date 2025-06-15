@@ -45,6 +45,22 @@ model Club {
   updatedAt DateTime @updatedAt
   users     User[]
   products  Product[]
+  DatesClub DatesClub[]
+}
+
+model DatesClub {
+  id          String   @id @default(cuid())
+  dayOfWeek   Int      
+  startTime   String   // Formato "HH:mm"
+  endTime     String   // Formato "HH:mm"
+  maxCapacity Int?     // Capacidad máxima de reservas para este horario
+  isActive    Boolean  @default(true) 
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  club        Club     @relation(fields: [clubId], references: [id])
+  clubId      String
+  
+  @@unique([clubId, dayOfWeek]) // Evitar horarios duplicados para el mismo día
 }
 
 model Product {
@@ -99,4 +115,6 @@ enum Role {
   CLUB
   ADMIN
 }
+
+
 
