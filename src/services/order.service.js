@@ -187,7 +187,6 @@ export const updateUserMonthlyStatsService = async (userId, grams, orderDate) =>
 export const completeOrderService = async (orderId) => {
     try {
         return await prisma.$transaction(async (tx) => {
-
             const currentOrder = await tx.order.findUnique({
                 where: { id: orderId },
                 include: { user: true }
@@ -199,6 +198,10 @@ export const completeOrderService = async (orderId) => {
             
             if (currentOrder.status === 'COMPLETED') {
                 throw new Error('La orden ya está completada');
+            }
+
+            if (!currentOrder.userId) {
+                throw new Error('La orden no tiene un usuario asociado');
             }
 
             const updatedOrder = await tx.order.update({
