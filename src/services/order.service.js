@@ -143,3 +143,160 @@ export const getOrderBySocioIdService = async(req) => {
         throw error;
     }
 }
+
+
+export const updateUserMonthlyStatsService = async (userId, grams, orderDate) => {
+    try {
+        const date = new Date(orderDate);
+        const year = date.getFullYear();
+        const month = date.getMonth() + 1;
+
+        const monthlyStats = await prisma.userMonthlyStats.upsert({
+            where: {
+                userId_year_month: {
+                    userId,
+                    year,
+                    month
+                }
+            },
+            update: {
+                totalGrams: {
+                    increment: grams
+                },
+                totalOrders: {
+                    increment: 1
+                }
+            },
+            create: {
+                userId,
+                year,
+                month,
+                totalGrams: grams,
+                totalOrders: 1
+            }
+        });
+        
+        return monthlyStats;
+    } catch (error) {
+        console.log('Error updating monthly stats:', error);
+        throw error;
+    }
+};
+
+
+export const completeOrderService = async (orderId) => {
+    try {
+        return await prisma.$transaction(async (tx) => {
+
+            const currentOrder = await tx.order.findUnique({
+                where: { id: orderId },
+                include: { user: true }
+            });
+            
+            if (!currentOrder) {
+                throw new Error('Orden no encontrada');
+            }
+            
+            if (currentOrder.status === 'COMPLETED') {
+                throw new Error('La orden ya está completada');
+            }
+
+            const updatedOrder = await tx.order.update({
+                where: { id: orderId },
+                data: { status: 'COMPLETED' },
+                include: {
+                    items: {
+                        include: {
+                            product: true
+                        }
+                    },
+                    user: true
+                }
+            });
+
+            // Actualizar estadísticas mensuales del usuario
+            const date = new Date(currentOrder.dateOrder);
+            const year = date.getFullYear();
+            const month = date.getMonth() + 1;
+            
+            await tx.userMonthlyStats.upsert({
+                where: {
+                    userId_year_month: {
+                        userId: currentOrder.userId,
+                        year,
+                        month
+                    }
+                },
+                update: {
+                    totalGrams: {
+                        increment: currentOrder.total
+                    },
+                    totalOrders: {
+                        increment: 1
+                    }
+                },
+                create: {
+                    userId: currentOrder.userId,
+                    year,
+                    month,
+                    totalGrams: currentOrder.total,
+                    totalOrders: 1
+                }
+            });
+            
+            return updatedOrder;
+        });
+    } catch (error) {
+        console.log('Error completing order:', error);
+        throw error;
+    }
+};
+
+export const cancelOrderService = async (orderId) => {
+    try {
+        const order = await prisma.order.findUnique({
+            where: { id: orderId }
+        });
+        
+        if (!order) {
+            throw new Error('Orden no encontrada');
+        }
+        
+        if (order.status === 'COMPLETED') {
+            throw new Error('No se puede cancelar una orden completada');
+        }
+        
+        return await prisma.order.update({
+            where: { id: orderId },
+            data: { status: 'CANCELLED' },
+            include: {
+                items: {
+                    include: {
+                        product: true
+                    }
+                },
+                user: true
+            }
+        });
+    } catch (error) {
+        console.log('Error cancelling order:', error);
+        throw error;
+    }
+};
+
+export const getUserMonthlyStatsService = async (userId, year) => {
+    try {
+        return await prisma.userMonthlyStats.findMany({
+            where: {
+                userId,
+                year
+            },
+            orderBy: {
+                month: 'asc'
+            }
+        });
+    } catch (error) {
+        console.log('Error getting monthly stats:', error);
+        throw error;
+    }
+};

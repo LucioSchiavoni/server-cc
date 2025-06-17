@@ -1,4 +1,4 @@
-import { createOrder, getOrderByUserIdService, getOrders, getOrderBySocioIdService } from '../services/order.service.js';
+import { createOrder, getOrderByUserIdService, getOrders, getOrderBySocioIdService, cancelOrderService, updateUserMonthlyStatsService, getUserMonthlyStatsService, completeOrderService } from '../services/order.service.js';
 
 export const createOrderController = async (req, res) => {
     try {
@@ -56,3 +56,61 @@ export const getOrderBySocioId = async(req,res) => {
         });
     }
 }
+
+
+export const completeOrderController = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const completedOrder = await completeOrderService(id);
+        res.status(200).json({
+            success: true,
+            message: 'Orden completada y estadísticas actualizadas',
+            data: completedOrder
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: 'Error al completar la orden',
+            error: error.message
+        });
+    }
+};
+
+export const cancelOrderController = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const cancelledOrder = await cancelOrderService(id);
+        
+        res.status(200).json({
+            success: true,
+            message: 'Orden cancelada exitosamente',
+            data: cancelledOrder
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: 'Error al cancelar la orden',
+            error: error.message
+        });
+    }
+};
+
+// GET /users/:userId/monthly-stats/:year - Obtener estadísticas mensuales
+export const getMonthlyStatsController = async (req, res) => {
+    try {
+        const { userId, year } = req.params;
+        const stats = await getUserMonthlyStatsService(userId, parseInt(year));
+
+        res.status(200).json({
+            success: true,
+            data: stats
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: 'Error al obtener estadísticas mensuales',
+            error: error.message
+        });
+    }
+};
+
