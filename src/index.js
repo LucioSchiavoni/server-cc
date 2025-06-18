@@ -6,14 +6,13 @@ import clubRouter from './routes/club.routes.js'
 import productRouter from './routes/product.routes.js'
 import orderRouter from './routes/order.routes.js'
 import clubScheduleRouter from './routes/clubSchedule.routes.js'
+import { checkSubscriptionStatus } from './middlewares/auth.middleware.js'
 
 dotenv.config()
-
 
 const app = express()
 
 const PORT = process.env.PORT
-
 
 const opcionesCors = {
     origin: process.env.FRONTEND_URL_DEV,
@@ -26,6 +25,20 @@ app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
 app.use(cors(opcionesCors))
 app.use("/uploads", express.static("src/uploads"))
+
+app.use((req, res, next) => {
+    
+    if (req.path === '/login') {
+        return next();
+    }
+    
+    if (req.user) {
+        return checkSubscriptionStatus(req, res, next);
+    }
+    
+    next();
+});
+
 //endpoint
 app.use("/", userRouter)
 app.use("/", clubRouter)
