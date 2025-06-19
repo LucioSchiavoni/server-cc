@@ -10,6 +10,6 @@ orderRouter.get("/order/socio/:socioId", getOrderBySocioId);
 //id de la orden
 orderRouter.put("/order/:id/complete", completeOrderController);
 orderRouter.put("/order/:id/cancel", cancelOrderController);
-orderRouter.get("/users/:userId/monthly-stats/:year", getMonthlyStatsController);
+orderRouter.get("/user/:userId/monthly-stats", getMonthlyStatsController);
 
 export default orderRouter;

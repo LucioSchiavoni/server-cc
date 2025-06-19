@@ -98,8 +98,8 @@ export const cancelOrderController = async (req, res) => {
 // GET /users/:userId/monthly-stats/:year - Obtener estadísticas mensuales
 export const getMonthlyStatsController = async (req, res) => {
     try {
-        const { userId, year } = req.params;
-        const stats = await getUserMonthlyStatsService(userId, parseInt(year));
+        const { userId } = req.params;
+        const stats = await getUserMonthlyStatsService(userId);
 
         res.status(200).json({
             success: true,

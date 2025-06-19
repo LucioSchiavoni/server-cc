@@ -291,8 +291,7 @@ export const getUserMonthlyStatsService = async (userId, year) => {
     try {
         return await prisma.userMonthlyStats.findMany({
             where: {
-                userId,
-                year
+                userId
             },
             orderBy: {
                 month: 'asc'
