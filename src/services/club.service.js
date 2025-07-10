@@ -1,20 +1,16 @@
 import prisma from "../config/db.js";
+import dotenv from "dotenv";
+dotenv.config();
 
 export const createClubService = async (req) => {
     try {
-        let imageUrl = null;
-        
-        if (req.file) {
-            imageUrl = `http://localhost:8080/uploads/${req.file.filename}`;
-        }
-
-
+        const image = req.file ? `${process.env.API_URL}/uploads/${req.file.filename}` : null;
 
         const create = await prisma.club.create({
             data: {
                 name: req.body.name,
                 description: req.body.description,
-                image: imageUrl,
+                image,
                 address: req.body.address,
                 phone: req.body.phone,
                 email: req.body.email,
