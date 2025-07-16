@@ -182,12 +182,6 @@ export const getClubByIdService = async(req) => {
         const dataClub = await prisma.club.findUnique({
             where: { 
                 id: clubId
-            },
-            include:{
-                users: {
-                    where:{rol: 'USER'}
-                },
-                products: true
             }
         });       
 
@@ -209,6 +203,33 @@ export const getClubByIdService = async(req) => {
             error: error.message
         };
     }
+}
+
+export const getUsersByClubService = async (req) => {
+    try {
+        const {clubId} = req.params;
+        const data = await prisma.club.findMany({
+            where: {
+                id: clubId
+            },
+            include:{
+                users:{
+                    where: {rol: 'USER'},
+                }
+            } 
+        });   
+        return {
+            status: 200,
+            data: data
+        };
+    } catch (error) {
+           return {
+            status: 500,
+            message: "Error al obtener los datos del club",
+            error: error.message
+        };
+    }
+
 }
 
 export const updateClubService = async (req) => {
