@@ -205,6 +205,47 @@ export const getClubByIdService = async(req) => {
     }
 }
 
+export const createGramsClubService = async (req) => {
+    try {
+        const { clubId } = req.params;
+        const { minGram, maxGram } = req.body;
+
+        const updateData = {};
+        if (minGram !== undefined && minGram !== null) updateData.minMonthlyGrams = minGram;
+        if (maxGram !== undefined && maxGram !== null) updateData.maxMonthlyGrams = maxGram;
+
+        if (Object.keys(updateData).length === 0) {
+            return {
+                status: 400,
+                message: "Debe proporcionar al menos un mínimo o máximo de gramos para actualizar"
+            };
+        }
+
+        const updatedGrams = await prisma.club.update({
+            where: { id: clubId },
+            data: updateData
+        });
+
+        return {
+            status: 200,
+            message: "Límites de gramos del club actualizados exitosamente",
+            data: updatedGrams
+        };
+    } catch (error) {
+        if (error.code === 'P2025') {
+            return {
+                status: 404,
+                message: "Club no encontrado"
+            };
+        }
+        return {
+            status: 500,
+            message: "Error al actualizar los grams del club",
+            error: error.message
+        };
+    }
+}
+
 export const getUsersByClubService = async (req) => {
     try {
         const {clubId} = req.params;
