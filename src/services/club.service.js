@@ -208,11 +208,11 @@ export const getClubByIdService = async(req) => {
 export const createGramsClubService = async (req) => {
     try {
         const { clubId } = req.params;
-        const { minGram, maxGram } = req.body;
+        const { minGrams, maxGrams } = req.body;
 
         const updateData = {};
-        if (minGram !== undefined && minGram !== null) updateData.minMonthlyGrams = minGram;
-        if (maxGram !== undefined && maxGram !== null) updateData.maxMonthlyGrams = maxGram;
+        if (minGrams !== undefined && minGrams !== null) updateData.minMonthlyGrams = minGrams;
+        if (maxGrams !== undefined && maxGrams !== null) updateData.maxMonthlyGrams = maxGrams;
 
         if (Object.keys(updateData).length === 0) {
             return {
