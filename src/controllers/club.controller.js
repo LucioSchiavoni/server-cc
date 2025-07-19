@@ -1,4 +1,4 @@
-import { createClubService, updateClubStatusService, updateUserClubService, updateClubImageService, getClubByIdService, updateClubService, getUsersByClubService, createGramsClubService } from "../services/club.service.js";
+import { createClubService, updateClubStatusService, updateUserClubService, updateClubImageService, getClubByIdService, updateClubService, getUsersByClubService, createGramsClubService, getGramsByClubService } from "../services/club.service.js";
 
 export const createClub = async (req, res) => {
     try {
@@ -140,3 +140,21 @@ export const updateClub = async (req, res) => {
         });
     }
 };
+
+
+export const getGramsByClub = async(req, res) => {
+  try {
+      const result = await getGramsByClubService(req);
+      if (result.status === 200) {
+          return res.status(200).json(result);
+      } else {
+          return res.status(result.status).json(result);
+      }
+  } catch (error) {
+      return res.status(500).json({
+          status: 500,
+          message: "Error interno del servidor",
+          error: error.message
+      });
+  }
+}

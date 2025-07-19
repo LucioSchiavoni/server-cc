@@ -276,7 +276,7 @@ export const getUsersByClubService = async (req) => {
 export const updateClubService = async (req) => {
     try {
         const { id } = req.params;
-        const { name, description, address, phone, email, website, active } = req.body;
+        const { name, description, address, phone, email, website } = req.body;
         
         // Construir objeto de actualización dinámicamente
         const updateData = {};
@@ -286,7 +286,6 @@ export const updateClubService = async (req) => {
         if (phone) updateData.phone = phone;
         if (email) updateData.email = email;
         if (website) updateData.website = website;
-        if (active !== undefined) updateData.active = active;
 
         // Manejar la imagen si se proporciona
         if (req.file) {
@@ -313,7 +312,6 @@ export const updateClubService = async (req) => {
                 phone: true,
                 email: true,
                 website: true,
-                active: true,
                 updatedAt: true
             }
         });
@@ -336,4 +334,36 @@ export const updateClubService = async (req) => {
             error: error.message
         };
     }
+}
+
+
+export const getGramsByClubService = async (req) => {
+
+    const {clubId} = req.params;
+
+   try {
+        const club = await prisma.club.findUnique({
+            where: {id: clubId},
+            select: {
+                minMonthlyGrams: true,
+                maxMonthlyGrams: true
+            }
+        });
+        if (!club) {
+            return {
+                status: 404,
+                message: "Club no encontrado"
+            };
+        }
+        return {
+            status: 200,
+            data: club
+        };
+    } catch (error) {
+        return {
+            status: 500,
+            message: "Error al obtener los gramos del club",
+            error: error.message
+        };
+   }
 }

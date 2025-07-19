@@ -101,6 +101,9 @@ export const getOrderByUserIdService = async(req) => {
                         clubId: true
                     }
                 }
+            },
+            orderBy: {
+                dateOrder: 'desc'
             }
         });
     } catch (error) {
