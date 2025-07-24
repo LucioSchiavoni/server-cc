@@ -20,5 +20,6 @@ userRouter.post('/register', authenticate, authorizeRoles('ADMIN', 'CLUB'), regi
 userRouter.get('/auth', authenticate, auth);
 userRouter.get('/users/all', authenticate, authorizeRoles('ADMIN'), getAllUsers);
 userRouter.get('/socios/:clubId', authenticate, authorizeRoles('CLUB'), getAllSocio);
+userRouter.patch('/change-password', changePassword);
 
 export default userRouter;

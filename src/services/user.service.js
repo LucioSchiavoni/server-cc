@@ -173,21 +173,31 @@ export const authService = async (req) => {
     }
 };
 
-export const changePasswordService = async(req) => {
-    const {id} = req.params;
-    const {password} = req.body;
+export const changePasswordService = async (req) => {
+    const { userId, currentPassword, newPassword } = req.body;
 
     try {
-        const salt = bcrypt.genSaltSync(10);
-        const hashPassword = bcrypt.hashSync(password, salt);
-        
-        await prisma.user.update({
-            where: { id: parseInt(id) },
-            data: { password: hashPassword }
+        const user = await prisma.user.findUnique({
+            where: { id: parseInt(userId) }
         });
 
-        return successResponse(null, 'Contraseña actualizada con éxito');
+        if (!user) {
+            return errorResponse('Usuario no encontrado', 404);
+        }
 
+        const isMatch = bcrypt.compareSync(currentPassword, user.password);
+        if (!isMatch) {
+            return errorResponse('La contraseña actual es incorrecta', 400);
+        }
+
+        const salt = bcrypt.genSaltSync(10);
+        const hashPassword = bcrypt.hashSync(newPassword, salt);
+
+        await prisma.user.update({
+            where: { id: parseInt(userId) },
+            data: { password: hashPassword }
+        });
+        return successResponse(null, 'Contraseña actualizada con éxito');
     } catch (error) {
         return errorResponse('Error al actualizar la contraseña', 500);
     }
