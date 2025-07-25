@@ -1,9 +1,28 @@
-import { createOrder, getOrderByUserIdService, getOrders, getOrderBySocioIdService, cancelOrderService, updateUserMonthlyStatsService, getUserMonthlyStatsService, completeOrderService } from '../services/order.service.js';
+import { createOrder, getOrderByUserIdService, getOrders, getOrderBySocioIdService, cancelOrderService, getUserMonthlyStatsService, completeOrderService } from '../services/order.service.js';
+import { sendNewOrderNotification } from '../services/email.service.js';
 
 export const createOrderController = async (req, res) => {
     try {
         const orderData = req.body;
         const order = await createOrder(orderData);
+        const clubEmail = req.club?.email; 
+        const clubEmailPassword = req.club?.emailPassword;
+
+        if (clubEmail && clubEmailPassword) {
+            sendNewOrderNotification(order, clubEmail, clubEmailPassword)
+                .then(result => {
+                    if (result.success) {
+                        console.log(`✅ Email enviado exitosamente para orden #${order.id}`);
+                    } else {
+                        console.error(`❌ Error al enviar email para orden #${order.id}:`, result.error);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error inesperado al enviar email:', error);
+                });
+        } else {
+            console.warn('⚠️ No se enviará email: credenciales del club no disponibles');
+        }
         res.status(201).json(order);
     } catch (error) {
         console.error('Error al crear la orden:', error);
