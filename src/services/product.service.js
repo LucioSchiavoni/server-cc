@@ -1,5 +1,5 @@
 import prisma from '../config/db.js';
-import { AppError, successResponse, errorResponse } from '../utils/responseHandler.js';
+import {  successResponse, errorResponse } from '../utils/responseHandler.js';
 
 export const createProductService = async (req) => {
     const { name, description, price, category, thc, CBD, stock, clubId } = req.body;

@@ -178,7 +178,7 @@ export const changePasswordService = async (req) => {
 
     try {
         const user = await prisma.user.findUnique({
-            where: { id: parseInt(userId) }
+            where: { id: userId }
         });
 
         if (!user) {
@@ -194,7 +194,7 @@ export const changePasswordService = async (req) => {
         const hashPassword = bcrypt.hashSync(newPassword, salt);
 
         await prisma.user.update({
-            where: { id: parseInt(userId) },
+            where: { id: userId },
             data: { password: hashPassword }
         });
         return successResponse(null, 'Contraseña actualizada con éxito');
