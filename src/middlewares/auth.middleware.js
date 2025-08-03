@@ -94,3 +94,66 @@ export const checkSubscriptionStatus = async (req, res, next) => {
         return res.status(500).json({ message: 'Error al verificar el estado de suscripción' });
     }
 }
+
+export const validateOrderData = (req, res, next) => {
+    const { userId, date, total, items } = req.body;
+
+    console.log('🔍 Validando datos de orden:', req.body);
+
+    // Validar campos requeridos básicos
+    if (!userId) {
+        return res.status(400).json({
+            success: false,
+            message: 'El campo userId es requerido'
+        });
+    }
+
+    if (!date) {
+        return res.status(400).json({
+            success: false,
+            message: 'El campo date es requerido'
+        });
+    }
+
+    if (!total) {
+        return res.status(400).json({
+            success: false,
+            message: 'El campo total es requerido'
+        });
+    }
+
+    if (!items || !Array.isArray(items) || items.length === 0) {
+        return res.status(400).json({
+            success: false,
+            message: 'El campo items es requerido y debe ser un array no vacío'
+        });
+    }
+
+    // Validar que total sea un número válido
+    if (isNaN(parseFloat(total)) || parseFloat(total) <= 0) {
+        return res.status(400).json({
+            success: false,
+            message: 'El campo total debe ser un número válido mayor a 0'
+        });
+    }
+
+    // Validar items básicamente
+    for (let i = 0; i < items.length; i++) {
+        const item = items[i];
+        if (!item.id) {
+            return res.status(400).json({
+                success: false,
+                message: `El item ${i + 1} debe tener un id`
+            });
+        }
+        if (!item.quantity || isNaN(parseFloat(item.quantity)) || parseFloat(item.quantity) <= 0) {
+            return res.status(400).json({
+                success: false,
+                message: `El item ${i + 1} debe tener una quantity válida mayor a 0`
+            });
+        }
+    }
+
+    console.log('✅ Validación de datos de orden exitosa');
+    next();
+};

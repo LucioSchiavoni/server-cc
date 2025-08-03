@@ -26,12 +26,14 @@ app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 app.use(cors(opcionesCors))
 app.use("/uploads", express.static("src/uploads"))
 
+// Middleware para verificar estado de suscripción solo en rutas protegidas
 app.use((req, res, next) => {
-    
-    if (req.path === '/login') {
+    // Permitir rutas de login sin verificación
+    if (req.path === '/login' || req.path === '/register') {
         return next();
     }
     
+    // Solo verificar suscripción si el usuario está autenticado
     if (req.user) {
         return checkSubscriptionStatus(req, res, next);
     }

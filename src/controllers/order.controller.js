@@ -1,32 +1,80 @@
-import { createOrder, getOrderByUserIdService, getOrders, getOrderBySocioIdService, cancelOrderService, getUserMonthlyStatsService, completeOrderService } from '../services/order.service.js';
+import { createOrder, getOrderByUserIdService, getOrders, getOrderBySocioIdService, cancelOrderService, getUserMonthlyStatsService, validateMonthlyGramLimit,addReservedGrams, completeOrderService, calculateTotalGrams, deleteOrderService } from '../services/order.service.js';
 import { sendNewOrderNotification } from '../services/email.service.js';
+import prisma from '../config/db.js';
 
 export const createOrderController = async (req, res) => {
     try {
-        const orderData = req.body;
-        const order = await createOrder(orderData);
-        const clubEmail = req.club?.email; 
-        const clubEmailPassword = req.club?.emailPassword;
 
-        if (clubEmail && clubEmailPassword) {
-            sendNewOrderNotification(order, clubEmail, clubEmailPassword)
-                .then(result => {
-                    if (result.success) {
-                        console.log(`✅ Email enviado exitosamente para orden #${order.id}`);
-                    } else {
-                        console.error(`❌ Error al enviar email para orden #${order.id}:`, result.error);
-                    }
-                })
-                .catch(error => {
-                    console.error('Error inesperado al enviar email:', error);
-                });
-        } else {
-            console.warn('⚠️ No se enviará email: credenciales del club no disponibles');
+        const orderData = req.body;
+        const { userId, date, total, items } = orderData;
+
+        // Calcular gramos totales basándose en los items
+        const totalGrams = await calculateTotalGrams(items);
+        
+        //Validar limites mensuales ANTES de crear la orden usando gramos reales
+        const validation = await validateMonthlyGramLimit(userId, totalGrams, date);
+        
+        
+        if (!validation.isValid) {
+            return res.status(400).json({
+                success: false,
+                message: validation.error,
+                details: {
+                    monthlyLimit: validation.monthlyLimit,
+                    currentUsed: validation.currentUsed,
+                    availableGrams: validation.availableGrams,
+                    requestedGrams: validation.requestedGrams
+                }
+            });
         }
-        res.status(201).json(order);
+
+
+        //Crear la orden si pasa la validación
+        const order = await createOrder(orderData);
+        
+        //Agregar gramos como reservados usando gramos reales
+        await addReservedGrams(userId, totalGrams, date);
+
+        // Obtener información del club para enviar email
+        const userWithClub = await prisma.user.findUnique({
+            where: { id: userId },
+            include: {
+                club: {
+                    select: {
+                        email: true,
+                        name: true
+                    }
+                }
+            }
+        });
+
+        const clubEmail = userWithClub?.club?.email;
+        
+        if (clubEmail) {
+            sendNewOrderNotification(order, clubEmail)
+        } 
+
+        // Enviar respuesta exitosa
+        res.status(201).json({
+            success: true,
+            message: 'Orden creada exitosamente',
+            data: order,
+            gramInfo: {
+                gramsReserved: totalGrams,
+                availableAfterOrder: validation.availableAfterOrder,
+                monthlyLimit: validation.monthlyLimit,
+                totalPrice: parseInt(total)
+            }
+        });
+
     } catch (error) {
-        console.error('Error al crear la orden:', error);
-        res.status(500).json({ error: 'Error al crear la orden' });
+        console.error('❌ Error al crear la orden:', error);
+    
+        res.status(500).json({ 
+            success: false,
+            message: 'Error al crear la orden',
+            error: error.message 
+        });
     }
 };
 
@@ -109,6 +157,26 @@ export const cancelOrderController = async (req, res) => {
         res.status(500).json({
             success: false,
             message: 'Error al cancelar la orden',
+            error: error.message
+        });
+    }
+};
+
+export const deleteOrderController = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const deletedOrder = await deleteOrderService(id);
+        
+        res.status(200).json({
+            success: true,
+            message: 'Orden eliminada exitosamente',
+            data: deletedOrder
+        });
+    } catch (error) {
+        console.error('Error al eliminar la orden:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error al eliminar la orden',
             error: error.message
         });
     }
