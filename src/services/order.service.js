@@ -41,11 +41,12 @@ export const createOrder = async (orderData) => {
         const formattedDate = new Date(date).toISOString().split('T')[0];
         
         const existingOrder = await prisma.order.findFirst({
-                where: {
-                userId,
-                dateOrder: formattedDate
-                },
-            });
+            where: {
+            userId,
+            dateOrder: formattedDate,
+            status: 'PENDING'
+            },
+        });
 
         if (existingOrder) {
         throw new Error('Ya existe una reserva para este usuario en esta fecha');
@@ -209,7 +210,7 @@ export const getOrderBySocioIdService = async(req) => {
 
         if (!socio) return [];
 
-        return await prisma.order.findMany({
+        const orders = await prisma.order.findMany({
             where: {
                 userId: socioId
             },
@@ -227,13 +228,31 @@ export const getOrderBySocioIdService = async(req) => {
                         clubId: true
                     }
                 }
-            }
+            },
+            orderBy: [
+                { dateOrder: 'desc' }, 
+                { hourOrder: 'desc' }   
+            ]
+        });
+
+        const statusPriority = {
+            'PENDING': 1,
+            'CANCELLED': 2,
+            'COMPLETED': 3
+        };
+
+        return orders.sort((a, b) => {
+            const statusDiff = statusPriority[a.status] - statusPriority[b.status];
+            if (statusDiff !== 0) return statusDiff;
+
+            const dateA = new Date(`${a.dateOrder}T${a.hourOrder}`);
+            const dateB = new Date(`${b.dateOrder}T${b.hourOrder}`);
+            return dateB.getTime() - dateA.getTime();
         });
     } catch (error) {
         throw error;
     }
 }
-
 
 export const updateUserMonthlyStatsService = async (userId, grams, orderDate) => {
     try {
@@ -308,7 +327,6 @@ export const completeOrderService = async (orderId) => {
                 }
             });
 
-            // Mover gramos de reservados a confirmados (esto reemplaza la lógica anterior)
             await moveReservedToConfirmed(
                 currentOrder.userId, 
                 currentOrder.total, 
@@ -325,36 +343,56 @@ export const completeOrderService = async (orderId) => {
 
 export const cancelOrderService = async (orderId) => {
     try {
-        const order = await prisma.order.findUnique({
-            where: { id: orderId }
-        });
-        
-        if (!order) {
-            throw new Error('Orden no encontrada');
-        }
-        
-        if (order.status === 'COMPLETED') {
-            throw new Error('No se puede cancelar una orden completada');
-        }
-        
-        return await prisma.order.update({
-            where: { id: orderId },
-            data: { status: 'CANCELLED' },
-            include: {
-                items: {
-                    include: {
-                        product: true
-                    }
-                },
-                user: true
+        return await prisma.$transaction(async (tx) => {
+            const currentOrder = await tx.order.findUnique({
+                where: { id: orderId },
+                include: { 
+                    items: true,
+                    user: true 
+                }
+            });
+            
+            if (!currentOrder) {
+                throw new Error('Orden no encontrada');
             }
+            
+            if (currentOrder.status === 'COMPLETED') {
+                throw new Error('No se puede cancelar una orden completada');
+            }
+            
+            if (currentOrder.status === 'CANCELLED') {
+                throw new Error('La orden ya está cancelada');
+            }
+            
+            const totalGrams = currentOrder.items.reduce((sum, item) => sum + item.quantity, 0);
+            
+            if (currentOrder.userId && totalGrams > 0) {
+                await removeReservedGrams(currentOrder.userId, totalGrams, currentOrder.dateOrder);
+            }
+            
+            const cancelledOrder = await tx.order.update({
+                where: { id: orderId },
+                data: { status: 'CANCELLED' },
+                include: {
+                    items: {
+                        include: {
+                            product: true
+                        }
+                    },
+                    user: {
+                        include:{
+                            club: true
+                        }
+                    }
+                }
+            });
+            
+            return cancelledOrder;
         });
     } catch (error) {
-        console.log('Error cancelling order:', error);
         throw error;
     }
 };
-
 export const getUserMonthlyStatsService = async (userId, year) => {
     try {
         return await prisma.userMonthlyStats.findMany({
@@ -583,6 +621,59 @@ export const moveReservedToConfirmed = async (userId, orderGrams, orderDate) => 
     }
 };
 
+
+export const cancelReservedGrams = async (userId, orderGrams, orderDate, tx = null) => {
+    const prismaClient = tx || prisma;
+    
+    try {
+        console.log('🔍 cancelReservedGrams - Parámetros recibidos:', { userId, orderGrams, orderDate });
+        
+        // Validar parámetros
+        if (!userId || !orderGrams || !orderDate) {
+            throw new Error(`Parámetros faltantes: userId=${userId}, orderGrams=${orderGrams}, orderDate=${orderDate}`);
+        }
+        
+        // Parsear fecha
+        const date = new Date(orderDate);
+        
+        // Validar que la fecha es válida
+        if (isNaN(date.getTime())) {
+            throw new Error(`Fecha inválida: ${orderDate}`);
+        }
+        
+        const year = date.getFullYear();
+        const month = date.getMonth() + 1;
+        
+        console.log('🔍 Fecha parseada:', { year, month });
+        
+        console.log('🔄 Ejecutando update en userMonthlyStats...');
+        await prismaClient.userMonthlyStats.update({
+            where: {
+                userId_year_month: {
+                    userId,
+                    year,
+                    month
+                }
+            },
+            data: {
+                reservedGrams: {
+                    decrement: parseInt(orderGrams)
+                }
+            }
+        });
+        
+        console.log('✅ userMonthlyStats actualizado exitosamente');
+        
+        return {
+            success: true,
+            message: `${orderGrams}g cancelados de reservados`
+        };
+    } catch (error) {
+        console.log('❌ Error en cancelReservedGrams:', error);
+        throw error;
+    }
+};
+
 export const removeReservedGrams = async (userId, orderGrams, orderDate) => {
     try {
         const date = new Date(orderDate);
@@ -624,7 +715,6 @@ export const removeReservedGrams = async (userId, orderGrams, orderDate) => {
 
 export const deleteOrderService = async (orderId) => {
     try {
-        // Verificar que la orden existe
         const order = await prisma.order.findUnique({
             where: { id: orderId },
             include: {
@@ -637,18 +727,16 @@ export const deleteOrderService = async (orderId) => {
             throw new Error('Orden no encontrada');
         }
         
-        // Solo permitir eliminar órdenes pendientes o canceladas
         if (order.status === 'COMPLETED') {
             throw new Error('No se puede eliminar una orden completada');
         }
         
-        // Si la orden tiene gramos reservados, removerlos
         if (order.userId) {
             const totalGrams = order.items.reduce((sum, item) => sum + item.quantity, 0);
             await removeReservedGrams(order.userId, totalGrams, order.dateOrder);
         }
         
-        // Eliminar la orden (los items se eliminarán automáticamente por CASCADE)
+        // Eliminar la orden
         const deletedOrder = await prisma.order.delete({
             where: { id: orderId },
             include: {

@@ -1,5 +1,5 @@
-import { createOrder, getOrderByUserIdService, getOrders, getOrderBySocioIdService, cancelOrderService, getUserMonthlyStatsService, validateMonthlyGramLimit,addReservedGrams, completeOrderService, calculateTotalGrams, deleteOrderService } from '../services/order.service.js';
-import { sendNewOrderNotification } from '../services/email.service.js';
+import { createOrder, getOrderByUserIdService, getOrders, getOrderBySocioIdService, cancelOrderService, getUserMonthlyStatsService, validateMonthlyGramLimit,addReservedGrams, completeOrderService, calculateTotalGrams, deleteOrderService, cancelReservedGrams } from '../services/order.service.js';
+import { sendNewOrderNotification, sendOrderCancelledNotification } from '../services/email.service.js';
 import prisma from '../config/db.js';
 
 export const createOrderController = async (req, res) => {
@@ -146,13 +146,15 @@ export const completeOrderController = async (req, res) => {
 export const cancelOrderController = async (req, res) => {
     try {
         const { id } = req.params;
-        const cancelledOrder = await cancelOrderService(id);
         
+        const result = await cancelOrderService(id);
+        await sendOrderCancelledNotification(result, result.user.club.email);
         res.status(200).json({
             success: true,
             message: 'Orden cancelada exitosamente',
-            data: cancelledOrder
+            data: result
         });
+        
     } catch (error) {
         res.status(500).json({
             success: false,
